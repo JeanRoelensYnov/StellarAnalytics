@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from requests.models import Response
 from ..Requests_tools import request_tools
 from locale import atof
+import re
 
 def url_builder() -> dict:
     """
@@ -34,7 +35,22 @@ def get_tbody(table):
     """
     return table.find_all('tbody')[1]
 
-def get_tbody_content(tbody) -> tuple[list, list]:
+def get_idx_relInt(req : Response):
+    """
+    Should return the correct index for relative intensity
+    """
+    soup = BeautifulSoup(req.text, 'html.parser')
+    tables= soup.find_all('table')
+    targetTable = [table for table in tables if 'background-color:#FFFEEE;' in table.get('style', '')]
+    if len(targetTable) > 0:
+        header = targetTable[0].find_all('tbody')[0]
+        columns = header.find_all('th')
+        for idx, th in enumerate(columns):
+            if re.search("Rel\.\s*Int\.",th.text):
+                return idx
+
+
+def get_tbody_content(tbody, idxRelInt) -> tuple[list, list]:
     """
     Mashup of all the scrapper logic, for a given tbody will return a tuple containing two list the first one
     being the observed wavelength and the second list is realtive intensities.
@@ -46,7 +62,8 @@ def get_tbody_content(tbody) -> tuple[list, list]:
         if len(allTd) >= 2:
             try:
                 wavelength = atof(allTd[0].text.strip())
-                intensities = atof(allTd[2].text.strip())
+                strippedRelInt = allTd[idxRelInt].text.strip().replace('*','')
+                intensities = atof(strippedRelInt)
                 if wavelength != None and intensities != None:
                     observedWavelength.append(wavelength)
                     relativeIntensities.append(intensities)
