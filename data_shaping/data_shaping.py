@@ -3,6 +3,10 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 
+# pour ignorer les warnings
+import warnings
+warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
+
 
 # PROBLEME DE PERF :
 # - shape() : trouver un moyen pour générer les colonnes manquantes du df en 1 fois (gérer les noms des colonnes ?)
@@ -33,7 +37,6 @@ def pca(df, nb_components):
 
     # min max scaler
     data_scaled = MinMaxScaler().fit(df).transform(df)
-    print(data_scaled)
 
     # PCA
     result_df = PCA(n_components=nb_components).fit_transform(data_scaled)
