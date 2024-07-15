@@ -4,6 +4,9 @@
 #         - relint : l'intensité relative (luminosité) de chaque bande
 #         - chemical : la ou les 
 
+# A OPTIMISER !!!!!!!!!!!!
+# la construction de la matrice d'éléments prends BEAUCOUP, BEAUCOUP trop de temps pour peu de choses
+
 import pandas as pd
 import numpy as np
 import os
@@ -16,7 +19,7 @@ max_wl_noise = 1100
 min_n_noise = 1500
 max_n_noise = 2000
 
-# recuperation de la liste des élélements
+# recuperation de la liste des élélements fichier par fichier
 def get_elements_list(path):
     filenames = os.listdir(path)
     dataframes = []
@@ -24,13 +27,7 @@ def get_elements_list(path):
         data = pd.read_csv(path + "\\" + n)
         # nomme le df en fonction de son element
         data.Name = n[:-4]
-        dataframes.append(data) # version sans le label "chemical"
-        # data = pd.read_csv(path + "\\" + n)
-        # ajout du label "Chemical"
-        # data["Chemical"] = [n[:-4]] * len(data)
-        # print(data.info)
-        # dataframes.append(data)
-    
+        dataframes.append(data)    
     return dataframes
 
 # generation de spectres
@@ -62,10 +59,10 @@ def generate_spectrum(base_elements):
     return df_res, labels
 
 def generate_spectrums(base_elements, n):
-    """Retourne plusieurs spectre lumineux sous forme de dataframe et la liste des labels associés"""
+    """Retourne plusieurs spectre lumineux sous forme de dataframe et la matrice de labels associée"""
     max_elems = len(base_elements)
     list_df = []
-    list_labels = []
+    matrice_labels = pd.DataFrame(columns=[x.Name for x in base_elements])
     
     # ne peut pas être construit avec moins de 2 éléments // limite pas nécessaire ?
     if (max_elems < 2):
@@ -75,8 +72,13 @@ def generate_spectrums(base_elements, n):
     for i in range(n):
         # création du df resultat en y ajoutant un nombre aléatoire d'éléments de base
         rand_elems = rand.choices(base_elements, k=rand.randrange(2, max_elems if max_elems < 5 else 5))
-        print(rand_elems)
-        list_labels.append([x.Name for x in rand_elems])
+
+        # initialisation du row
+        matrice_labels.loc[i] = [0] * max_elems
+
+        # changement du 0 en 1 pour noter les éléments présents
+        for elem in rand_elems:
+            matrice_labels.at[i, elem.Name] = 1
 
         # df_res = pd.concat(rand.choices(base_elements, k=rand.randrange(1, max_elems)), ignore_index = True)
         df_res = pd.concat(rand_elems, ignore_index=True)
@@ -91,16 +93,16 @@ def generate_spectrums(base_elements, n):
         # réordonne par wavelength
         list_df.append(df_res.sort_values("wavelength"))
 
-    return list_df, list_labels
+    return list_df, matrice_labels
 
 if __name__ == "__main__":
-    path = "generation_spectre\elements"
+    path = "StellarAnalytics\generation_spectre\elements"
 
     elements = get_elements_list(path)
-    spectrum, labels = generate_spectrum(elements)
-    print(labels)
-    print(spectrum.info)
+    spectrum, labels = generate_spectrums(elements, 10)
+    print("matrice labels :", labels)
+    print(labels.info)
 
     # plot pour voir la gueule que ça a avec les rectangles colonnes là
-    plt.plot(spectrum["wavelength"], spectrum["relint"])
+    plt.plot(spectrum[0]["wavelength"], spectrum[0]["relint"])
     plt.show()
