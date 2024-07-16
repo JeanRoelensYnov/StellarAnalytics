@@ -1,18 +1,23 @@
 # on part du principe qu'on va recevoir une liste composée des spectres des principaux gaz/métaux
-# présents dans les étoiles, présentés sous la forme d'un dataset à 3 entrées :
-#         -  wavelength : les longueurs d'ondes (bandes) principales de l'élément
+# présents dans les étoiles, présentés sous la forme d'un dataset à 2 colonnes :
+#         - wavelength : les longueurs d'ondes (bandes) principales de l'élément
 #         - relint : l'intensité relative (luminosité) de chaque bande
-#         - chemical : la ou les 
 
-# A OPTIMISER !!!!!!!!!!!!
-# la construction de la matrice d'éléments prends BEAUCOUP, BEAUCOUP trop de temps pour peu de choses
 
+
+###### PB ACTUEL :
+# les index fonctionnent mal, si index pas présent
 import pandas as pd
 import numpy as np
 import os
 import random as rand
 import matplotlib.pyplot as plt
+from decimal import Decimal
+from math import pow
 
+min_elems_used = 4
+max_elems_used = 5
+min_relint_noise = 0
 max_relint_noise = 50
 min_wl_noise = 0
 max_wl_noise = 1100
@@ -27,7 +32,7 @@ def get_elements_list(path):
         data = pd.read_csv(path + "\\" + n)
         # nomme le df en fonction de son element
         data.Name = n[:-4]
-        dataframes.append(data)    
+        dataframes.append(data) 
     return dataframes
 
 # generation de spectres
@@ -95,13 +100,64 @@ def generate_spectrums(base_elements, n):
 
     return list_df, matrice_labels
 
+
+
+def new_generate_spectrums(base_elements, n, step = 0.5):
+    # ne peut pas être construit avec moins d' 1 element
+    nb_elems = len(base_elements)
+
+    if (nb_elems < min_elems_used):
+        print("not enough base elements provided")
+        pass
+
+    # création du df labels
+    labels = pd.DataFrame(data = np.zeros((n, nb_elems)), columns=[elem.Name for elem in base_elements])
+
+    # génération des spectres
+    list_df = []
+    for i in range(n):
+        # création du squelette + pré-remplissage avec du bruit
+        array_wavelength = np.arange(0,max_wl_noise,step)
+        array_relint = np.random.randint(min_relint_noise,max_relint_noise, array_wavelength.shape)
+        df = pd.DataFrame(data ={"wavelength": array_wavelength , "relint": array_relint})
+        # df.set_index("wavelength", inplace=True)
+
+        # selection des éléments a rajouter
+        rand_elems = rand.choices(base_elements, k=rand.randrange(min_elems_used, nb_elems if nb_elems < max_elems_used else max_elems_used))
+
+        # loren ipsum
+        for elem in rand_elems:
+            # stockage des labels
+            labels.at[i, elem.Name] = 1
+
+            # loren ipsum
+            # sorted_elem = elem.set_index("wavelength").reindex(array_wavelength)
+            # sorted_elem = elem.sort_values('wavelength', ascending=True).drop_duplicates(["wavelength"], keep="last").set_index("wavelength").reindex(array_wavelength, method="nearest")
+            elem["wavelength"] = elem["wavelength"].apply(lambda x: myround(x, step))
+
+            # ajout au df
+            df = pd.concat([df, elem], ignore_index=True)
+            # indexes = next(idx for idx, row in sorted_elem.iterrows() if row["relint"] != np.nan)
+            # values = next(row["relint"] for idx, row in sorted_elem.iterrows() if row["relint"] != np.nan)
+        
+        # traitement des doublons
+        
+        df = df.sort_values("relint", ascending=True).drop_duplicates(["wavelength"], keep="last").sort_values("wavelength", ascending=True).reset_index(drop=True)
+        list_df.append(df)
+
+    return list_df, labels
+
+
+def myround(n, base):
+    return base * round(n/base)
+
 if __name__ == "__main__":
-    path = "StellarAnalytics\generation_spectre\elements"
+    path = "StellarAnalytics\generation_spectre\elements_presentation"
 
     elements = get_elements_list(path)
-    spectrum, labels = generate_spectrums(elements, 10)
-    print("matrice labels :", labels)
-    print(labels.info)
+    spectrum, labels = generate_spectrums(elements, 1)
+    print("matrice labels :", labels.iloc[0].to_string())
+    print("spectre : ", spectrum[0])
 
     # plot pour voir la gueule que ça a avec les rectangles colonnes là
     plt.plot(spectrum[0]["wavelength"], spectrum[0]["relint"])
