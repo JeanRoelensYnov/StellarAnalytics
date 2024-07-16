@@ -1,5 +1,6 @@
 import pandas as pd
-import numpy as np
+from StellarAnalytics.generation_spectre.randspectrum import get_elements_list, generate_spectrums
+from StellarAnalytics.data_shaping import shape, pca
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 from statistics import mean
@@ -8,12 +9,23 @@ from sklearn.metrics import recall_score
 # parameters
 max_labels_per_df = 5
 
-# load data from csv
+# récupère les spectres des éléments de base
+print("generating elements...")
+elements = get_elements_list("./StellarAnalytics/generation_spectre/elements")
 
-print("loading data...")
+# génère les spectres aléatoires + la matrice de label
+print("generating spectrums...")
+spectrums, labels = generate_spectrums(elements, 7000)
 
-data_scaled = np.genfromtxt("spectrums_after_pca2.csv", delimiter=",")
-labels = pd.read_csv("labels2.csv")
+
+# transforme la liste de df en 1 df
+print("shaping the data...")
+data_shaped = shape(spectrums)
+
+# scale la donnée pour limiter le nombre de colonnes
+print("rescaling...")
+
+data_scaled = pca(data_shaped, 5)
 
 # slice labels df in smaller dfs
 list_sliced_labels = []
@@ -40,11 +52,7 @@ for df in list_sliced_labels:
     prevision = pd.concat([prevision, pd.DataFrame(result)], axis=1)
     expected = pd.concat([expected, pd.DataFrame(y_val)], axis=1)
 
-print(prevision.head(5))
-print(expected.head(5))
-
 # precision metrics
-
 prevision = prevision.to_numpy()
 expected = expected.to_numpy()
 

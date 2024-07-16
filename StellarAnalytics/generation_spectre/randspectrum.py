@@ -1,6 +1,6 @@
 # on part du principe qu'on va recevoir une liste composée des spectres des principaux gaz/métaux
 # présents dans les étoiles, présentés sous la forme d'un dataset à 3 entrées :
-#         -  wavelength : les longueurs d'ondes (bandes) principales de l'élément
+#         - wavelength : les longueurs d'ondes (bandes) principales de l'élément
 #         - relint : l'intensité relative (luminosité) de chaque bande
 #         - chemical : la ou les 
 
@@ -96,7 +96,7 @@ def generate_spectrums(base_elements, n):
     return list_df, matrice_labels
 
 if __name__ == "__main__":
-    path = "StellarAnalytics\generation_spectre\elements"
+    path = "StellarAnalytics\Data\Output"
 
     elements = get_elements_list(path)
     spectrum, labels = generate_spectrums(elements, 10)

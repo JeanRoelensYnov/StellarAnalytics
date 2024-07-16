@@ -7,10 +7,6 @@ from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 import warnings
 warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
-
-# PROBLEME DE PERF :
-# - shape() : trouver un moyen pour générer les colonnes manquantes du df en 1 fois (gérer les noms des colonnes ?)
-
 def shape(list_df):
     result_df = pd.DataFrame()
 
@@ -34,18 +30,14 @@ def shape(list_df):
 
 
 def pca(df, nb_components):
-
     # min max scaler
     data_scaled = MinMaxScaler().fit(df).transform(df)
-
     # PCA
     result_df = PCA(n_components=nb_components).fit_transform(data_scaled)
-
     return result_df
 
 
 def encode_labels(labels):
     le = LabelEncoder()
     data_encoded = le.fit_transform(labels)
-    # on recupère l'encoder afin de 
     return data_encoded, le
