@@ -1,1 +1,1 @@
-from .data_shaping import shape, pca, encode_labels
+from .data_shaping import shape, pca, encode_labels, reshape, pca_2D

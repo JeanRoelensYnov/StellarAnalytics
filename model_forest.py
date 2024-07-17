@@ -1,42 +1,29 @@
 import pandas as pd
-from StellarAnalytics.generation_spectre.randspectrum import get_elements_list, generate_spectrums
-from StellarAnalytics.data_shaping import shape, pca
+import numpy as np
 from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 from statistics import mean
 from sklearn.metrics import recall_score
 
-# parameters
+# paramètres
 max_labels_per_df = 5
 
-# récupère les spectres des éléments de base
-print("generating elements...")
-elements = get_elements_list("./StellarAnalytics/generation_spectre/elements")
+# récupération des données
+print("loading data...")
 
-# génère les spectres aléatoires + la matrice de label
-print("generating spectrums...")
-spectrums, labels = generate_spectrums(elements, 7000)
+data_scaled = np.genfromtxt("scaled_data.csv", delimiter=",")
+labels = pd.read_csv("related_labels.csv")
 
-
-# transforme la liste de df en 1 df
-print("shaping the data...")
-data_shaped = shape(spectrums)
-
-# scale la donnée pour limiter le nombre de colonnes
-print("rescaling...")
-
-data_scaled = pca(data_shaped, 5)
-
-# slice labels df in smaller dfs
+# découpage du df labels en plus petits df
 list_sliced_labels = []
 
 for i in range(len(labels.columns)//max_labels_per_df):
     list_sliced_labels.append(labels.iloc[:,i * max_labels_per_df : (i+1) * max_labels_per_df])
 
-# add remaining columns in a last df
+# ajouter les colonnes restante a un dernier df
 list_sliced_labels.append(labels.iloc[:,-(len(labels.columns) % max_labels_per_df) :])
 
-# model integration !
+# intégration du modèle
 prevision = pd.DataFrame()
 expected = pd.DataFrame()
 for df in list_sliced_labels:
@@ -52,12 +39,14 @@ for df in list_sliced_labels:
     prevision = pd.concat([prevision, pd.DataFrame(result)], axis=1)
     expected = pd.concat([expected, pd.DataFrame(y_val)], axis=1)
 
-# precision metrics
+# calcul de précision
+
 prevision = prevision.to_numpy()
 expected = expected.to_numpy()
 
 overall_precision = [round(elem, 2) for elem in recall_score(expected, prevision, average=None)]
 map(float, overall_precision)
+
 positive_precision = []
 for i in range(len(expected)):
     for j in range(len(expected[i])):
